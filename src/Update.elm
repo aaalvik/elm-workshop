@@ -25,17 +25,20 @@ update msg model =
 
         SecondPassed time ->
             let
-                ( newSnake, isDead ) =
-                    moveSnake model.direction model.map model.snake
+                newModel =
+                    moveSnake model
             in
-            ( { model | snake = newSnake, dead = isDead }, Cmd.none )
+            ( newModel, Cmd.none )
 
 
-moveSnake : Direction -> Map -> Snake -> ( Snake, Bool )
-moveSnake direction map snake =
+moveSnake : Model -> Model
+moveSnake model =
     let
+        snake =
+            model.snake
+
         newHead =
-            moveHead snake.head direction
+            moveHead snake.head model.direction
 
         newTail =
             if snake.isGrowing then
@@ -44,9 +47,27 @@ moveSnake direction map snake =
                 snake.head :: List.take (List.length snake.tail - 1) snake.tail
 
         isDead =
-            hitWall map newHead
+            hitWall model.map newHead
+
+        newFood =
+            Maybe.andThen
+                (\pos ->
+                    if pos == newHead then
+                        Nothing
+                    else
+                        Just pos
+                )
+                model.food
+
+        newSnake =
+            { snake | head = newHead, tail = newTail, isGrowing = False }
+
+        -- case food of
+        --     Just pos ->
+        --         if pos == newHead then Nothing else Just pos
+        --     Nothing ->
     in
-    ( { snake | head = newHead, tail = newTail, isGrowing = False }, isDead )
+    { model | snake = newSnake, dead = isDead, food = newFood }
 
 
 hitWall : Map -> Position -> Bool
